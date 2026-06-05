@@ -347,6 +347,20 @@ export default function App() {
     loadLeads().then(l => { setLeads(l); setLoading(false); });
   }, []);
 
+  // Activate a status filter from the ?status= query param (e.g. opened from the OS hub pipeline bar)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = new URLSearchParams(window.location.search).get("status");
+    if (!raw) return;
+    const map = {
+      new: "New", contacted: "Contacted",
+      proposal_sent: "Proposal Sent", "proposal-sent": "Proposal Sent", "proposal sent": "Proposal Sent",
+      won: "Won", lost: "Lost", nurture: "Nurture",
+    };
+    const match = map[raw.toLowerCase()] || STATUSES.find(s => s.toLowerCase() === raw.toLowerCase());
+    if (match) setFilterStatus(match);
+  }, []);
+
   const handleSave = async (form) => {
     if (!form.name || !form.company || !form.email) {
       alert("Name, company, and email are required.");
