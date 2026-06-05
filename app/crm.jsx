@@ -39,6 +39,8 @@ const EMPTY_LEAD = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function uid() {
+  // UUID so CRM-created leads match the Supabase leads.id (uuid) column
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
@@ -53,22 +55,46 @@ function isOverdue(iso) {
   return new Date(iso + "T00:00:00") < new Date(new Date().toDateString());
 }
 
-// ── Storage ────────────────────────────────────────────────────────────────
+// ── Data layer (Supabase via /api/leads) ───────────────────────────────────
 async function loadLeads() {
   try {
-    const result = await window.storage.get(STORAGE_KEY);
-    return result ? JSON.parse(result.value) : [];
+    const res = await fetch("/api/leads", { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.leads) ? data.leads : [];
   } catch {
     return [];
   }
 }
 
-async function saveLeads(leads) {
-  try {
-    await window.storage.set(STORAGE_KEY, JSON.stringify(leads));
-  } catch (e) {
-    console.error("Storage error:", e);
-  }
+async function createLead(lead) {
+  const res = await fetch("/api/leads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(lead),
+  });
+  if (!res.ok) throw new Error("create failed");
+  return (await res.json()).lead;
+}
+
+async function updateLead(lead) {
+  const res = await fetch("/api/leads", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(lead),
+  });
+  if (!res.ok) throw new Error("update failed");
+  return (await res.json()).lead;
+}
+
+async function deleteLead(id) {
+  const res = await fetch(`/api/leads?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("delete failed");
+}
+
+async function logout() {
+  await fetch("/api/auth/logout", { method: "POST" });
+  window.location.href = "/login";
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -316,32 +342,39 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
 
-  // Load from storage on mount
+  // Load from Supabase on mount
   useEffect(() => {
     loadLeads().then(l => { setLeads(l); setLoading(false); });
   }, []);
 
-  // Persist on change
-  useEffect(() => {
-    if (!loading) saveLeads(leads);
-  }, [leads, loading]);
-
-  const handleSave = (form) => {
+  const handleSave = async (form) => {
     if (!form.name || !form.company || !form.email) {
       alert("Name, company, and email are required.");
       return;
     }
-    if (form.id) {
-      setLeads(ls => ls.map(l => l.id === form.id ? form : l));
-    } else {
-      setLeads(ls => [...ls, { ...form, id: uid(), createdAt: new Date().toISOString() }]);
+    try {
+      if (form.id) {
+        const saved = await updateLead(form);
+        setLeads(ls => ls.map(l => l.id === form.id ? (saved || form) : l));
+      } else {
+        const newLead = { ...form, id: uid(), createdAt: new Date().toISOString() };
+        const saved = await createLead(newLead);
+        setLeads(ls => [...ls, saved || newLead]);
+      }
+      setEditLead(null);
+    } catch {
+      alert("Could not save the lead. Please try again.");
     }
-    setEditLead(null);
   };
 
-  const handleDelete = (id) => {
-    setLeads(ls => ls.filter(l => l.id !== id));
-    setEditLead(null);
+  const handleDelete = async (id) => {
+    try {
+      await deleteLead(id);
+      setLeads(ls => ls.filter(l => l.id !== id));
+      setEditLead(null);
+    } catch {
+      alert("Could not delete the lead. Please try again.");
+    }
   };
 
   const filtered = leads.filter(l => {
@@ -411,12 +444,20 @@ export default function App() {
             )}
           </div>
 
-          <button
-            onClick={() => setEditLead({ ...EMPTY_LEAD })}
-            className="text-[13px] font-mono text-white bg-[#3b82f6] px-4 py-2 rounded-lg hover:bg-[#2563eb] transition-colors flex items-center gap-1.5"
-          >
-            + Add Lead
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEditLead({ ...EMPTY_LEAD })}
+              className="text-[13px] font-mono text-white bg-[#3b82f6] px-4 py-2 rounded-lg hover:bg-[#2563eb] transition-colors flex items-center gap-1.5"
+            >
+              + Add Lead
+            </button>
+            <button
+              onClick={logout}
+              className="text-[13px] font-mono text-[#7a9abf] border border-[#1a2d45] px-4 py-2 rounded-lg hover:text-[#e8f0fe] hover:border-[#3d5a7a] transition-colors"
+            >
+              Log out
+            </button>
+          </div>
         </div>
       </div>
 
