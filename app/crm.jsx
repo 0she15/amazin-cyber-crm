@@ -321,9 +321,18 @@ function LeadForm({ lead, onSave, onClose, onDelete }) {
             <div className="bg-[#111d2e] border border-[#1a2d45] rounded-lg p-3">
               <p className="text-[10px] font-mono text-[#3d5a7a] uppercase tracking-wider mb-2">Quick Actions</p>
               <div className="flex flex-wrap gap-2">
+                {form.id && (
+                  <a
+                    href={`https://proposals.amazincyber.com?lead_id=${encodeURIComponent(form.id)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-mono text-white bg-[#3b82f6] border border-transparent px-2.5 py-1 rounded hover:bg-[#2563eb] transition-colors"
+                  >
+                    {Icons.document}Generate Proposal
+                  </a>
+                )}
                 {[
                   [Icons.calendar, "Send Calendly", `mailto:${form.email}?subject=Amazin Cyber — Quick Security Conversation&body=Hi ${form.name?.split(" ")[0] || ""},\n\nThanks for your interest. Here's a link to grab 20 minutes:\n\n[YOUR CALENDLY LINK]\n\nLooking forward to connecting.\n\nOshé\nAmazin Cyber`],
-                  [Icons.document, "Send Proposal", `mailto:${form.email}?subject=Your Microsoft 365 Security Snapshot Proposal&body=Hi ${form.name?.split(" ")[0] || ""},\n\nPlease find your Security Snapshot proposal attached.\n\nHappy to answer any questions before you decide.\n\nOshé`],
                   [Icons.refresh, "90-Day Check-in", `mailto:${form.email}?subject=Checking in — Your M365 Security Snapshot&body=Hi ${form.name?.split(" ")[0] || ""},\n\nIt's been 90 days since your Microsoft 365 Security Snapshot. A lot can change — new users, new settings, new risks.\n\nWanted to check in and see how things are going.\n\nOshé\nAmazin Cyber`],
                 ].map(([icon, label, href]) => (
                   <a key={label} href={href} className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#60a5fa] border border-[#1e3a5f] bg-blue-500/5 px-2.5 py-1 rounded hover:bg-blue-500/10 transition-colors">
