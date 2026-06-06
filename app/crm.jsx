@@ -1,5 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 
+// ── Line icons (currentColor; stroke 1.5, no fill) ──────────────────────────
+const Svg = (children, size = 14) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{children}</svg>
+);
+const Icons = {
+  calendar: Svg(<><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M8 3v4M16 3v4M4 9.5h16" /></>),
+  document: Svg(<><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v4h4" /><path d="M9.5 12h5M9.5 15h5" /></>),
+  refresh: Svg(<><path d="M20 11a8 8 0 0 0-14-4.5L4 8" /><path d="M4 4v4h4" /><path d="M4 13a8 8 0 0 0 14 4.5L20 16" /><path d="M20 20v-4h-4" /></>),
+  warning: Svg(<><path d="M12 4 2.5 20h19z" /><path d="M12 10v4M12 17h.01" /></>, 11),
+};
+
 // ── Constants ──────────────────────────────────────────────────────────────
 const STORAGE_KEY = "amazin_crm_leads";
 
@@ -138,8 +149,8 @@ function LeadCard({ lead, onClick, onStatusChange, highlight }) {
       <div className="flex items-center justify-between mt-1.5">
         <p className="text-[10px] text-[#3d5a7a]">{lead.source || "—"}</p>
         {lead.nextActionDate && (
-          <p className={`text-[10px] font-mono ${overdue ? "text-red-400" : "text-[#3d5a7a]"}`}>
-            {overdue ? "⚠ " : ""}{formatDate(lead.nextActionDate)}
+          <p className={`inline-flex items-center gap-1 text-[10px] font-mono ${overdue ? "text-red-400" : "text-[#3d5a7a]"}`}>
+            {overdue && Icons.warning}{formatDate(lead.nextActionDate)}
           </p>
         )}
       </div>
@@ -193,7 +204,7 @@ function LeadForm({ lead, onSave, onClose, onDelete }) {
                 Delete
               </button>
             )}
-            <button onClick={onClose} className="text-[#7a9abf] hover:text-[#e8f0fe] transition-colors text-lg leading-none px-1">×</button>
+            <button onClick={onClose} aria-label="Close" className="text-[#7a9abf] hover:text-[#e8f0fe] transition-colors leading-none px-1"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg></button>
           </div>
         </div>
 
@@ -311,12 +322,12 @@ function LeadForm({ lead, onSave, onClose, onDelete }) {
               <p className="text-[10px] font-mono text-[#3d5a7a] uppercase tracking-wider mb-2">Quick Actions</p>
               <div className="flex flex-wrap gap-2">
                 {[
-                  ["📅 Send Calendly", `mailto:${form.email}?subject=Amazin Cyber — Quick Security Conversation&body=Hi ${form.name?.split(" ")[0] || ""},\n\nThanks for your interest. Here's a link to grab 20 minutes:\n\n[YOUR CALENDLY LINK]\n\nLooking forward to connecting.\n\nOshé\nAmazin Cyber`],
-                  ["📄 Send Proposal", `mailto:${form.email}?subject=Your Microsoft 365 Security Snapshot Proposal&body=Hi ${form.name?.split(" ")[0] || ""},\n\nPlease find your Security Snapshot proposal attached.\n\nHappy to answer any questions before you decide.\n\nOshé`],
-                  ["🔄 90-Day Check-in", `mailto:${form.email}?subject=Checking in — Your M365 Security Snapshot&body=Hi ${form.name?.split(" ")[0] || ""},\n\nIt's been 90 days since your Microsoft 365 Security Snapshot. A lot can change — new users, new settings, new risks.\n\nWanted to check in and see how things are going.\n\nOshé\nAmazin Cyber`],
-                ].map(([label, href]) => (
-                  <a key={label} href={href} className="text-[11px] font-mono text-[#60a5fa] border border-[#1e3a5f] bg-blue-500/5 px-2.5 py-1 rounded hover:bg-blue-500/10 transition-colors">
-                    {label}
+                  [Icons.calendar, "Send Calendly", `mailto:${form.email}?subject=Amazin Cyber — Quick Security Conversation&body=Hi ${form.name?.split(" ")[0] || ""},\n\nThanks for your interest. Here's a link to grab 20 minutes:\n\n[YOUR CALENDLY LINK]\n\nLooking forward to connecting.\n\nOshé\nAmazin Cyber`],
+                  [Icons.document, "Send Proposal", `mailto:${form.email}?subject=Your Microsoft 365 Security Snapshot Proposal&body=Hi ${form.name?.split(" ")[0] || ""},\n\nPlease find your Security Snapshot proposal attached.\n\nHappy to answer any questions before you decide.\n\nOshé`],
+                  [Icons.refresh, "90-Day Check-in", `mailto:${form.email}?subject=Checking in — Your M365 Security Snapshot&body=Hi ${form.name?.split(" ")[0] || ""},\n\nIt's been 90 days since your Microsoft 365 Security Snapshot. A lot can change — new users, new settings, new risks.\n\nWanted to check in and see how things are going.\n\nOshé\nAmazin Cyber`],
+                ].map(([icon, label, href]) => (
+                  <a key={label} href={href} className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#60a5fa] border border-[#1e3a5f] bg-blue-500/5 px-2.5 py-1 rounded hover:bg-blue-500/10 transition-colors">
+                    {icon}{label}
                   </a>
                 ))}
               </div>
