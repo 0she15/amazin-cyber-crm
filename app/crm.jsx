@@ -107,12 +107,23 @@ function StatusBadge({ status, small = false }) {
   );
 }
 
-function LeadCard({ lead, onClick, onStatusChange }) {
+function LeadCard({ lead, onClick, onStatusChange, highlight }) {
   const overdue = isOverdue(lead.nextActionDate);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (highlight && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlight]);
   return (
     <div
+      ref={ref}
       onClick={() => onClick(lead)}
-      className="bg-[#0d1520] border border-[#1a2d45] rounded-lg p-3 mb-2 cursor-pointer hover:border-[#1e3a5f] hover:bg-[#111d2e] transition-all group"
+      className={`rounded-lg p-3 mb-2 cursor-pointer transition-all group ${
+        highlight
+          ? "bg-[#111d2e] border-2 border-[#3b82f6] shadow-[0_0_22px_rgba(59,130,246,0.45)]"
+          : "bg-[#0d1520] border border-[#1a2d45] hover:border-[#1e3a5f] hover:bg-[#111d2e]"
+      }`}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className="min-w-0">
@@ -136,7 +147,7 @@ function LeadCard({ lead, onClick, onStatusChange }) {
   );
 }
 
-function KanbanColumn({ status, leads, onLeadClick, onStatusChange }) {
+function KanbanColumn({ status, leads, onLeadClick, onStatusChange, highlightId }) {
   const c = STATUS_COLORS[status];
   return (
     <div className="flex flex-col min-w-[200px] flex-1">
@@ -146,7 +157,7 @@ function KanbanColumn({ status, leads, onLeadClick, onStatusChange }) {
       </div>
       <div className="flex-1 min-h-[80px]">
         {leads.map(l => (
-          <LeadCard key={l.id} lead={l} onClick={onLeadClick} onStatusChange={onStatusChange} />
+          <LeadCard key={l.id} lead={l} onClick={onLeadClick} onStatusChange={onStatusChange} highlight={highlightId === l.id} />
         ))}
         {leads.length === 0 && (
           <div className="border border-dashed border-[#1a2d45] rounded-lg p-4 text-center">
@@ -341,6 +352,14 @@ export default function App() {
   const [editLead, setEditLead] = useState(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [highlightId, setHighlightId] = useState(null);
+
+  // Highlight + scroll to a specific lead from the ?lead= query param (opened from the OS hub)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const id = new URLSearchParams(window.location.search).get("lead");
+    if (id) { setHighlightId(id); setFilterStatus("All"); }
+  }, []);
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -529,6 +548,7 @@ export default function App() {
                 status={s}
                 leads={filtered.filter(l => l.status === s)}
                 onLeadClick={setEditLead}
+                highlightId={highlightId}
               />
             ))}
           </div>
